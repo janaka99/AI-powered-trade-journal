@@ -20,6 +20,13 @@ import {
 import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import ActionMenu from "./components/action-menu";
+
+const typeBadgeClassMap: Record<"real" | "demo" | "backtest", string> = {
+  real: "border-transparent bg-primary text-primary-foreground",
+  demo: "border-transparent bg-secondary text-secondary-foreground",
+  backtest: "border-transparent bg-muted text-muted-foreground",
+};
 
 export default function page() {
   return <JournalPage />;
@@ -82,6 +89,8 @@ async function JournalPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -92,7 +101,9 @@ async function JournalPage() {
                     </TableCell>
                     <TableCell>{account.broker || "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">
+                      <Badge
+                        className={`capitalize ${typeBadgeClassMap[account.type]}`}
+                      >
                         {account.type}
                       </Badge>
                     </TableCell>
@@ -106,6 +117,16 @@ async function JournalPage() {
                       <Badge variant={account.isActive ? "default" : "outline"}>
                         {account.isActive ? "Active" : "Inactive"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(account.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "2-digit",
+                      })}
+                    </TableCell>
+                    <TableCell className="flex justify-end">
+                      <ActionMenu account={account} />
                     </TableCell>
                   </TableRow>
                 ))}

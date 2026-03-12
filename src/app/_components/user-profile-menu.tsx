@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth/auth-client";
+import Image from "next/image";
 
 type SessionUser = {
   name?: string | null;
@@ -40,9 +41,9 @@ export default function UserProfileMenu({ user }: { user: SessionUser }) {
 
   const userName = user.name || "User";
   const userEmail = user.email || "";
-  const userImage = user.image || "";
+  const userImage = user.image || null;
   const initials = getInitials(userName) || "U";
-
+  console.log(userImage);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -52,7 +53,11 @@ export default function UserProfileMenu({ user }: { user: SessionUser }) {
           aria-label="Open user menu"
         >
           {userImage ? (
-            <img src={userImage} className="h-full w-full object-cover" />
+            <img
+              src={userImage}
+              alt={userName}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <span className="text-xs font-semibold">{initials}</span>
           )}

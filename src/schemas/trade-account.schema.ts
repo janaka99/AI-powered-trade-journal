@@ -23,3 +23,27 @@ export const createTradeAccountSchema = z.object({
 });
 
 export type CreateTradeAccountInput = z.infer<typeof createTradeAccountSchema>;
+
+export const updateTradeAccountSchema = z.object({
+  id: z.string().min(1, { message: "Account ID is required." }),
+  name: z
+    .string()
+    .min(1, { message: "Account name is required." })
+    .max(100, { message: "Account name must be less than 100 characters." }),
+  broker: z
+    .string()
+    .max(100, { message: "Broker name must be less than 100 characters." })
+    .optional()
+    .or(z.literal("")),
+  type: tradeAccountTypeSchema,
+  balance: z
+    .number({ message: "Balance is required." })
+    .positive({ message: "Balance must be greater than 0." }),
+  currency: z
+    .string()
+    .min(1, { message: "Currency is required." })
+    .max(10, { message: "Currency must be less than 10 characters." }),
+  isActive: z.boolean({ message: "Status is required." }),
+});
+
+export type UpdateTradeAccountInput = z.infer<typeof updateTradeAccountSchema>;

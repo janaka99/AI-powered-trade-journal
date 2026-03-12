@@ -35,9 +35,9 @@ type NavItem = {
 const navItems: NavItem[] = [
   { title: "Home", href: "/", icon: Home },
   { title: "Journal", href: "/journal", icon: ChartCandlestick },
-  { title: "Manual Journal", href: "/manual-journal", icon: BookOpenText },
+  // { title: "Manual Journal", href: "/manual-journal", icon: BookOpenText },
   { title: "Profile", href: "/profile", icon: UserCircle2 },
-  { title: "Admin", href: "/admin", icon: Shield },
+  // { title: "Admin", href: "/admin", icon: Shield },
 ];
 
 export function AppSidebar() {
@@ -67,10 +67,9 @@ export function AppSidebar() {
                     asChild
                     isActive={pathname === item.href}
                     tooltip={item.title}
-                    size="lg"
                   >
                     <Link href={item.href}>
-                      <item.icon className="size-7! p-1 ml-[2px]" />
+                      <item.icon className="" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

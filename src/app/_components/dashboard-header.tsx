@@ -13,7 +13,6 @@ export default function DashboardHeader() {
   if (isPending || error || !session || !session.user) {
     return <DashboardLoading />;
   }
-  //   return <DashboardLoading />;
   return (
     <div className="flex items-center gap-2">
       <ThemeToggle />
@@ -28,10 +27,10 @@ export default function DashboardHeader() {
 function DashboardLoading() {
   return (
     <div className="flex items-center gap-2">
-      <Skeleton className="h-9 w-9 rounded-full" />
-      <Skeleton className="h-9 w-32 " />
-      <Skeleton className="h-9 w-9 sm:w-32 " />
-      <Skeleton className="h-9 w-9 rounded-full" />
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <Skeleton className="h-8 w-32 " />
+      <Skeleton className="h-8 w-8 sm:w-32 " />
+      <Skeleton className="h-8 w-8 rounded-full" />
     </div>
   );
 }

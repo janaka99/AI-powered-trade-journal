@@ -47,11 +47,11 @@ export default function RootLayout({
                 <SidebarTrigger />
                 <DashboardHeader />
               </header>
-              <main className="w-full p-5">{children}</main>
+              <main className="w-full p-5 ">{children}</main>
             </SidebarInset>
           </SidebarProvider>
         </TradeAccountProvider>
-        <Toaster position="top-left" />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

@@ -1,9 +1,14 @@
-import { Button } from "@/components/ui/button";
-
 import { auth } from "@/lib/auth/auth";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import HomePageHeader from "./_components/homepage-header";
+import SimpleAnalytics from "./_components/simple-analytics";
+import PerformanceStats from "./_components/performance-stats";
+import ActivityStats from "./_components/activity-stats";
+import DirectionalAnalysis from "./_components/directional-analysis";
+import RiskManagement from "./_components/risk-management";
+import TradeCalendar from "./_components/trade-calendar";
+import TradesList from "./_components/trades-list";
 
 async function page() {
   const session = await auth.api.getSession({
@@ -14,21 +19,18 @@ async function page() {
     return redirect("/auth/login");
   }
   return (
-    <div className="my-6 px-4 max-w-md mx-auto">
-      <div className="text-center space-y-6">
-        <div className="text-2xl">Welcome, {session.user.name}</div>
-        <Button asChild size="lg">
-          <Link href="/journal">Journal</Link>
-        </Button>
-        <Button asChild size="lg" variant="outline">
-          <Link href="/manual-journal">Manual Journal</Link>
-        </Button>
-        <div className="flex gap-4 justidy-center">
-          <Button asChild size="lg">
-            <Link href="/profile">Profile</Link>
-          </Button>
-        </div>
+    <div className="space-y-4">
+      <HomePageHeader />
+      {/* // TODO - add some stats and recent activity here */}
+      <SimpleAnalytics />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DirectionalAnalysis className="lg:row-span-2" />
+        <PerformanceStats className="lg:col-span-1" />
+        <RiskManagement className="lg:col-span-1" />
       </div>
+      <ActivityStats />
+      <TradeCalendar />
+      <TradesList />
     </div>
   );
 }

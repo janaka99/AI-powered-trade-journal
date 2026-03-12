@@ -79,7 +79,11 @@ export default function TradeAccountSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="min-w-32 justify-between">
+        <Button
+          variant="outline"
+          className="min-w-32 justify-between"
+          size="sm"
+        >
           <span className="inline-flex items-center gap-2">
             <WalletCards />
             Accounts

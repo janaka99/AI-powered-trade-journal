@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createTradeAccountAction } from "@/actions/trade-account/create";
+import { updateTradeAccountAction } from "@/actions/trade-account/update";
 import { LoadingSwap } from "@/components/ui/loading-swap";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,8 @@ import {
 import {
   createTradeAccountSchema,
   type CreateTradeAccountInput,
+  updateTradeAccountSchema,
+  type UpdateTradeAccountInput,
 } from "@/schemas/trade-account.schema";
 
 const accountTypeOptions: Array<{
@@ -49,25 +52,76 @@ const accountTypeOptions: Array<{
   { label: "Backtest", value: "backtest" },
 ];
 
-export default function CreateTradeAccountDialog() {
-  const router = useRouter();
-  const [open, setOpen] = React.useState(false);
+type TradeAccountFormData = CreateTradeAccountInput | UpdateTradeAccountInput;
 
-  const form = useForm<CreateTradeAccountInput>({
-    resolver: zodResolver(createTradeAccountSchema),
+interface TradeAccountDialogProps {
+  mode?: "create" | "edit";
+  accountData?: {
+    id: string;
+    name: string;
+    broker: string | null;
+    type: "real" | "demo" | "backtest";
+    balance: string;
+    currency: string;
+    isActive: boolean;
+  };
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export default function CreateTradeAccountDialog({
+  mode = "create",
+  accountData,
+  trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: TradeAccountDialogProps) {
+  const router = useRouter();
+  const [internalOpen, setInternalOpen] = React.useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled
+    ? controlledOnOpenChange || (() => {})
+    : setInternalOpen;
+
+  const form = useForm<TradeAccountFormData>({
+    resolver: zodResolver(
+      mode === "edit" ? updateTradeAccountSchema : createTradeAccountSchema,
+    ),
     defaultValues: {
-      name: "",
-      broker: "",
+      ...(mode === "edit" && accountData?.id ? { id: accountData.id } : {}),
+      name: accountData?.name || "",
+      broker: accountData?.broker || "",
       type: "real",
-      balance: 0,
-      currency: "USD",
+      balance: accountData?.balance ? parseFloat(accountData.balance) : 0,
+      currency: accountData?.currency || "USD",
+      ...(mode === "edit" ? { isActive: accountData?.isActive ?? true } : {}),
     },
   });
 
   const { isSubmitting } = form.formState;
 
-  async function handleSubmit(data: CreateTradeAccountInput) {
-    const response = await createTradeAccountAction(data);
+  React.useEffect(() => {
+    if (mode === "edit" && accountData) {
+      form.reset({
+        ...(accountData.id ? { id: accountData.id } : {}),
+        name: accountData.name,
+        broker: accountData.broker || "",
+        type: accountData.type,
+        balance: parseFloat(accountData.balance),
+        currency: accountData.currency,
+        isActive: accountData.isActive,
+      });
+    }
+  }, [mode, accountData, form]);
+
+  async function handleSubmit(data: TradeAccountFormData) {
+    const response =
+      mode === "edit"
+        ? await updateTradeAccountAction(data as UpdateTradeAccountInput)
+        : await createTradeAccountAction(data as CreateTradeAccountInput);
 
     if (!response.success) {
       if (response.fieldErrors) {
@@ -76,7 +130,7 @@ export default function CreateTradeAccountDialog() {
             return;
           }
 
-          form.setError(field as keyof CreateTradeAccountInput, {
+          form.setError(field as keyof TradeAccountFormData, {
             type: "server",
             message: messages[0],
           });
@@ -88,13 +142,15 @@ export default function CreateTradeAccountDialog() {
     }
 
     toast.success(response.message);
-    form.reset({
-      name: "",
-      broker: "",
-      type: "real",
-      balance: 0,
-      currency: "USD",
-    });
+    if (mode === "create") {
+      form.reset({
+        name: "",
+        broker: "",
+        type: "real",
+        balance: 0,
+        currency: "USD",
+      });
+    }
     window.dispatchEvent(new Event("trade-accounts:refresh"));
     setOpen(false);
     router.refresh();
@@ -105,17 +161,25 @@ export default function CreateTradeAccountDialog() {
       open={open}
       onOpenChange={(value) => !isSubmitting && setOpen(value)}
     >
-      <DialogTrigger asChild>
-        <Button>
-          <Plus />
-          <span className="hidden sm:flex">Add Account</span>
-        </Button>
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : mode === "create" ? (
+        <DialogTrigger asChild>
+          <Button size="sm">
+            <Plus />
+            <span className="hidden sm:flex">Add Account</span>
+          </Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create trade account</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Edit trade account" : "Create trade account"}
+          </DialogTitle>
           <DialogDescription>
-            Add a trading account to track balances and journal entries.
+            {mode === "edit"
+              ? "Update your trading account details."
+              : "Add a trading account to track balances and journal entries."}
           </DialogDescription>
         </DialogHeader>
 
@@ -231,8 +295,40 @@ export default function CreateTradeAccountDialog() {
               )}
             />
 
+            {mode === "edit" && (
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      disabled={isSubmitting}
+                      value={field.value ? "active" : "inactive"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "active")
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              <LoadingSwap isLoading={isSubmitting}>Create account</LoadingSwap>
+              <LoadingSwap isLoading={isSubmitting}>
+                {mode === "edit" ? "Update account" : "Create account"}
+              </LoadingSwap>
             </Button>
           </form>
         </Form>
