@@ -15,6 +15,8 @@ type TradeAccountContextValue = {
   tradeAccounts: TradeAccountContextItem[];
   selectedTradeAccountIds: string[];
   selectedTradeAccounts: TradeAccountContextItem[];
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
   setTradeAccounts: (accounts: TradeAccountContextItem[]) => void;
   addTradeAccount: (accountId: string) => void;
   removeTradeAccount: (accountId: string) => void;
@@ -35,6 +37,7 @@ export function TradeAccountProvider({
   const [selectedTradeAccountIds, setSelectedTradeAccountIds] = React.useState<
     string[]
   >([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const setTradeAccounts = React.useCallback(
     (accounts: TradeAccountContextItem[]) => {
@@ -112,6 +115,8 @@ export function TradeAccountProvider({
       tradeAccounts,
       selectedTradeAccountIds,
       selectedTradeAccounts,
+      isLoading,
+      setIsLoading,
       setTradeAccounts,
       addTradeAccount,
       removeTradeAccount,
@@ -121,6 +126,7 @@ export function TradeAccountProvider({
       tradeAccounts,
       selectedTradeAccountIds,
       selectedTradeAccounts,
+      isLoading,
       setTradeAccounts,
       addTradeAccount,
       removeTradeAccount,

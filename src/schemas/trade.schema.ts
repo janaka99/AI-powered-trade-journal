@@ -32,6 +32,10 @@ export const createTradeSchema = z.object({
     .optional(),
   risk: z.number({ message: "Risk must be a valid number." }).optional(),
   profit: z.number({ message: "Profit is required." }),
+  swap: z.number({ message: "Swap must be a valid number." }).optional(),
+  commissions: z
+    .number({ message: "Commissions must be a valid number." })
+    .optional(),
   notes: z
     .string()
     .max(1000, { message: "Notes must be less than 1000 characters." })

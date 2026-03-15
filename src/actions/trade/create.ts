@@ -49,6 +49,10 @@ export async function createTradeAction(
       : undefined,
     risk: formData.get("risk") ? Number(formData.get("risk")) : undefined,
     profit: Number(formData.get("profit")),
+    swap: formData.get("swap") ? Number(formData.get("swap")) : undefined,
+    commissions: formData.get("commissions")
+      ? Number(formData.get("commissions"))
+      : undefined,
     notes: (formData.get("notes") as string) || undefined,
     mediaId: undefined,
   };
@@ -94,6 +98,14 @@ export async function createTradeAction(
       profit:
         parsedInput.data.profit !== undefined
           ? parsedInput.data.profit.toFixed(2)
+          : null,
+      swap:
+        parsedInput.data.swap !== undefined
+          ? parsedInput.data.swap.toFixed(2)
+          : null,
+      commissions:
+        parsedInput.data.commissions !== undefined
+          ? parsedInput.data.commissions.toFixed(2)
           : null,
       notes: parsedInput.data.notes?.trim() || null,
       mediaId: mediaId || null,

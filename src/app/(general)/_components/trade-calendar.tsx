@@ -33,24 +33,22 @@ export default function TradeCalendar({ className }: { className?: string }) {
   );
 
   const handlePrevMonth = useCallback(() => {
-    setMonth((prev) => {
-      if (prev === 0) {
-        setYear((y) => y - 1);
-        return 11;
-      }
-      return prev - 1;
-    });
-  }, []);
+    if (month === 0) {
+      setMonth(11);
+      setYear(year - 1);
+    } else {
+      setMonth(month - 1);
+    }
+  }, [month, year]);
 
   const handleNextMonth = useCallback(() => {
-    setMonth((prev) => {
-      if (prev === 11) {
-        setYear((y) => y + 1);
-        return 0;
-      }
-      return prev + 1;
-    });
-  }, []);
+    if (month === 11) {
+      setMonth(0);
+      setYear(year + 1);
+    } else {
+      setMonth(month + 1);
+    }
+  }, [month, year]);
 
   const handleToday = useCallback(() => {
     const today = new Date();

@@ -5,7 +5,7 @@ import { tradeAccount } from "@/drizzle/schemas/trade-account-schema";
 import { trade } from "@/drizzle/schemas/trade-schema";
 import { auth } from "@/lib/auth/auth";
 import type { ServerActionResult } from "@/hooks/use-action-swr";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 
 type TradeItem = {
@@ -19,6 +19,8 @@ type TradeItem = {
   exitTime: Date | null;
   risk: string | null;
   profit: string | null;
+  swap: string | null;
+  commissions: string | null;
   notes: string | null;
   mediaId: string | null;
   createdAt: Date;
@@ -43,6 +45,8 @@ type GetAllTradesInput = {
   accountIds: string[];
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 const DEFAULT_PAGE = 1;
@@ -117,16 +121,28 @@ export async function getAllTradesAction(
       };
     }
 
+    // Build date filters for exitTime
+    const dateFilters = [];
+    if (input.startDate) {
+      dateFilters.push(gte(trade.exitTime, new Date(input.startDate)));
+    }
+    if (input.endDate) {
+      const end = new Date(input.endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilters.push(lte(trade.exitTime, end));
+    }
+
+    const whereClause = and(
+      eq(trade.userId, session.user.id),
+      inArray(trade.accountId, accountIds),
+      ...dateFilters,
+    );
+
     // Get total count for pagination metadata
     const [{ totalItems }] = await db
       .select({ totalItems: count() })
       .from(trade)
-      .where(
-        and(
-          eq(trade.userId, session.user.id),
-          inArray(trade.accountId, accountIds),
-        ),
-      );
+      .where(whereClause);
 
     // Fetch paginated trades
     const trades = await db
@@ -141,19 +157,16 @@ export async function getAllTradesAction(
         exitTime: trade.exitTime,
         risk: trade.risk,
         profit: trade.profit,
+        swap: trade.swap,
+        commissions: trade.commissions,
         notes: trade.notes,
         mediaId: trade.mediaId,
         createdAt: trade.createdAt,
         updatedAt: trade.updatedAt,
       })
       .from(trade)
-      .where(
-        and(
-          eq(trade.userId, session.user.id),
-          inArray(trade.accountId, accountIds),
-        ),
-      )
-      .orderBy(desc(trade.createdAt))
+      .where(whereClause)
+      .orderBy(desc(trade.exitTime))
       .limit(limit)
       .offset(offset);
 

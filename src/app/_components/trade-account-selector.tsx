@@ -25,13 +25,13 @@ export default function TradeAccountSelector() {
   const {
     tradeAccounts,
     selectedTradeAccountIds,
+    isLoading,
+    setIsLoading,
     setTradeAccounts,
     addTradeAccount,
     removeTradeAccount,
     isTradeAccountSelected,
   } = useTradeAccountContext();
-
-  const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTradeAccounts = React.useCallback(async () => {
     setIsLoading(true);

@@ -1,13 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-import { createTradeAction } from "@/actions/trade/create";
+import { updateTradeAction } from "@/actions/trade/update";
 import { listTradeAccountsForTradeAction } from "@/actions/trade/list-trade-accounts";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -39,11 +37,27 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useActionSWR } from "@/hooks/use-action-swr";
 import {
-  createTradeSchema,
-  type CreateTradeInput,
+  updateTradeSchema,
+  type UpdateTradeInput,
 } from "@/schemas/trade.schema";
 
-type CreateTradeFormInput = z.input<typeof createTradeSchema>;
+type UpdateTradeFormInput = z.input<typeof updateTradeSchema>;
+
+type TradeData = {
+  id: string;
+  accountId: string;
+  symbol: string;
+  direction: "long" | "short";
+  entryPrice: string;
+  exitPrice: string | null;
+  entryTime: Date;
+  exitTime: Date | null;
+  risk: string | null;
+  profit: string | null;
+  swap: string | null;
+  commissions: string | null;
+  notes: string | null;
+};
 
 const directionOptions: Array<{ label: string; value: "long" | "short" }> = [
   { label: "Long", value: "long" },
@@ -64,26 +78,65 @@ function toDateTimeLocalValue(value?: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export default function ManualTradeAddForm() {
-  const [open, setOpen] = React.useState(false);
+type EditTradeDialogProps = {
+  trade: TradeData;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
+};
+
+export default function EditTradeDialog({
+  trade,
+  open,
+  onOpenChange,
+  onSuccess,
+}: EditTradeDialogProps) {
   const tradeAccountParams = React.useMemo(() => ({}), []);
 
-  const form = useForm<CreateTradeFormInput, unknown, CreateTradeInput>({
-    resolver: zodResolver(createTradeSchema),
+  const form = useForm<UpdateTradeFormInput, unknown, UpdateTradeInput>({
+    resolver: zodResolver(updateTradeSchema),
     defaultValues: {
-      accountId: "",
-      symbol: "",
-      direction: "long",
-      entryPrice: 0,
-      exitPrice: 0,
-      entryTime: new Date(),
-      profit: 0,
-      notes: "",
+      id: trade.id,
+      accountId: trade.accountId,
+      symbol: trade.symbol,
+      direction: trade.direction,
+      entryPrice: parseFloat(trade.entryPrice),
+      exitPrice: trade.exitPrice ? parseFloat(trade.exitPrice) : 0,
+      entryTime: new Date(trade.entryTime),
+      exitTime: trade.exitTime ? new Date(trade.exitTime) : undefined,
+      risk: trade.risk ? parseFloat(trade.risk) : undefined,
+      profit: trade.profit ? parseFloat(trade.profit) : 0,
+      swap: trade.swap ? parseFloat(trade.swap) : undefined,
+      commissions: trade.commissions
+        ? parseFloat(trade.commissions)
+        : undefined,
+      notes: trade.notes ?? "",
       mediaId: "",
     },
   });
 
-  const mediaFileRef = React.useRef<File | null>(null);
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        id: trade.id,
+        accountId: trade.accountId,
+        symbol: trade.symbol,
+        direction: trade.direction,
+        entryPrice: parseFloat(trade.entryPrice),
+        exitPrice: trade.exitPrice ? parseFloat(trade.exitPrice) : 0,
+        entryTime: new Date(trade.entryTime),
+        exitTime: trade.exitTime ? new Date(trade.exitTime) : undefined,
+        risk: trade.risk ? parseFloat(trade.risk) : undefined,
+        profit: trade.profit ? parseFloat(trade.profit) : 0,
+        swap: trade.swap ? parseFloat(trade.swap) : undefined,
+        commissions: trade.commissions
+          ? parseFloat(trade.commissions)
+          : undefined,
+        notes: trade.notes ?? "",
+        mediaId: "",
+      });
+    }
+  }, [open, trade, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -99,9 +152,11 @@ export default function ManualTradeAddForm() {
       },
     },
   );
-  async function handleSubmit(data: CreateTradeInput) {
+
+  async function handleSubmit(data: UpdateTradeInput) {
     const formData = new FormData();
 
+    formData.append("id", data.id);
     formData.append("accountId", data.accountId);
     formData.append("symbol", data.symbol);
     formData.append("direction", data.direction);
@@ -124,11 +179,8 @@ export default function ManualTradeAddForm() {
     if (data.notes) {
       formData.append("notes", data.notes);
     }
-    if (mediaFileRef.current) {
-      formData.append("media", mediaFileRef.current);
-    }
 
-    const response = await createTradeAction(formData);
+    const response = await updateTradeAction(formData);
 
     if (!response.success) {
       if (response.fieldErrors) {
@@ -137,7 +189,7 @@ export default function ManualTradeAddForm() {
             return;
           }
 
-          form.setError(field as keyof CreateTradeFormInput, {
+          form.setError(field as keyof UpdateTradeFormInput, {
             type: "server",
             message: messages[0],
           });
@@ -149,39 +201,20 @@ export default function ManualTradeAddForm() {
     }
 
     toast.success(response.message);
-    form.reset({
-      accountId: "",
-      symbol: "",
-      direction: "long",
-      entryPrice: 0,
-      exitPrice: 0,
-      entryTime: new Date(),
-      profit: 0,
-      swap: undefined,
-      commissions: undefined,
-      notes: "",
-      mediaId: "",
-    });
-    mediaFileRef.current = null;
-    setOpen(false);
+    onOpenChange(false);
+    onSuccess?.();
   }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(value) => !isSubmitting && setOpen(value)}
+      onOpenChange={(value) => !isSubmitting && onOpenChange(value)}
     >
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Plus />
-          <span className="hidden sm:flex">Add Trade</span>
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add manual trade</DialogTitle>
+          <DialogTitle>Edit trade</DialogTitle>
           <DialogDescription>
-            Add a single trade manually to your journal.
+            Update the details of your trade.
           </DialogDescription>
         </DialogHeader>
 
@@ -494,39 +527,8 @@ export default function ManualTradeAddForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="mediaId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      disabled={isSubmitting}
-                      accept="image/*"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          mediaFileRef.current = file;
-                          field.onChange(file.name);
-                        } else {
-                          mediaFileRef.current = null;
-                          field.onChange("");
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Upload an optional image for this trade.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              <LoadingSwap isLoading={isSubmitting}>Add trade</LoadingSwap>
+              <LoadingSwap isLoading={isSubmitting}>Update trade</LoadingSwap>
             </Button>
           </form>
         </Form>

@@ -141,19 +141,30 @@ export async function getRiskMetricsAction(
     let totalRisk = 0;
     let profitableRiskRewardCount = 0;
     let tradesWithRisk = 0;
+    let totalWins = 0;
+    let winCount = 0;
+    let totalLosses = 0;
+    let lossCount = 0;
 
     trades.forEach((t) => {
       const risk = toNumber(t.risk);
       const profit = toNumber(t.profit);
 
-      if (risk !== 0) {
-        totalRisk += Math.abs(risk);
+      if (risk > 0) {
+        totalRisk += risk;
         tradesWithRisk++;
 
-        // Profitable R:R means profit >= risk (positive risk reward)
-        if (profit >= risk && risk > 0) {
+        if (profit >= risk) {
           profitableRiskRewardCount++;
         }
+      }
+
+      if (profit > 0) {
+        totalWins += profit;
+        winCount++;
+      } else if (profit < 0) {
+        totalLosses += Math.abs(profit);
+        lossCount++;
       }
     });
 
@@ -161,9 +172,10 @@ export async function getRiskMetricsAction(
       tradesWithRisk > 0 ? roundToTwo(totalRisk / tradesWithRisk) : 0;
     const totalRiskTaken = roundToTwo(totalRisk);
 
-    // Calculate overall risk reward ratio (avg profit per unit risk)
-    const riskRewardRatio =
-      totalRisk > 0 ? roundToTwo(Math.abs(runningBalance) / totalRisk) : 0;
+    // Risk reward ratio: average win / average loss
+    const avgWin = winCount > 0 ? totalWins / winCount : 0;
+    const avgLoss = lossCount > 0 ? totalLosses / lossCount : 0;
+    const riskRewardRatio = avgLoss > 0 ? roundToTwo(avgWin / avgLoss) : 0;
 
     const metrics: RiskMetrics = {
       maxDrawdown: roundToTwo(maxDrawdown),

@@ -43,14 +43,14 @@ export default function RiskManagement({ className }: { className?: string }) {
 
         <RiskStatItem
           label="Average Risk Per Trade"
-          value={formatCurrency(data.avgRiskPerTrade)}
+          value={formatPercentage(data.avgRiskPerTrade)}
           subtext="Average risk exposure"
         />
 
         <RiskStatItem
           label="Risk Reward Ratio"
-          value={data.riskRewardRatio.toFixed(2)}
-          subtext="Profit per unit of risk"
+          value={`1:${data.riskRewardRatio.toFixed(2)}`}
+          subtext="Average win vs average loss"
           isPositive={data.riskRewardRatio >= 1}
         />
 
@@ -62,7 +62,7 @@ export default function RiskManagement({ className }: { className?: string }) {
 
         <RiskStatItem
           label="Total Risk Taken"
-          value={formatCurrency(data.totalRiskTaken)}
+          value={formatPercentage(data.totalRiskTaken)}
           subtext="Cumulative risk exposure"
         />
       </CardContent>
@@ -171,4 +171,8 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatPercentage(value: number): string {
+  return `${value.toFixed(2)}%`;
 }
