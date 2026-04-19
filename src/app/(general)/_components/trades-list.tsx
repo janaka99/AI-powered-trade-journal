@@ -68,7 +68,7 @@ const ORDER_OPTIONS = [
   { value: "exitPrice-asc", label: "Exit Price (Low to High)" },
 ] as const;
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 30;
 
 export default function TradesList() {
   const { selectedTradeAccountIds: accountIds } = useTradeAccountContext();
@@ -133,7 +133,6 @@ export default function TradesList() {
   if (trades.length === 0) {
     return <TradesListEmpty />;
   }
-
   return (
     <Card className="w-full">
       <CardHeader>

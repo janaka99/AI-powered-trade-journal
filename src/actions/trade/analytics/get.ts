@@ -119,11 +119,14 @@ export async function getAnalyticsAction(
       };
     }
 
-    const netProfitExpr = sql`(${trade.profit} + coalesce(${trade.swap}, 0) + coalesce(${trade.commissions}, 0))`;
+    const netProfitExpr = sql`(coalesce(${trade.profit}, 0) + coalesce(${trade.swap}, 0) + coalesce(${trade.commissions}, 0))`;
 
     const [aggregates] = await db
       .select({
         totalProfit: sql<string>`coalesce(sum(${netProfitExpr}), 0)`,
+        sumProfit: sql<string>`coalesce(sum(${trade.profit}), 0)`,
+        sumSwap: sql<string>`coalesce(sum(${trade.swap}), 0)`,
+        sumCommissions: sql<string>`coalesce(sum(${trade.commissions}), 0)`,
         grossProfit: sql<string>`coalesce(sum(case when ${netProfitExpr} > 0 then ${netProfitExpr} else 0 end), 0)`,
         grossLossAbs: sql<string>`coalesce(sum(case when ${netProfitExpr} < 0 then abs(${netProfitExpr}) else 0 end), 0)`,
         avgWin: sql<string>`coalesce(avg(case when ${netProfitExpr} > 0 then ${netProfitExpr} end), 0)`,
@@ -140,12 +143,26 @@ export async function getAnalyticsAction(
       );
 
     const totalProfit = toNumber(aggregates?.totalProfit);
+    const sumProfit = toNumber(aggregates?.sumProfit);
+    const sumSwap = toNumber(aggregates?.sumSwap);
+    const sumCommissions = toNumber(aggregates?.sumCommissions);
     const grossProfit = toNumber(aggregates?.grossProfit);
     const grossLossAbs = toNumber(aggregates?.grossLossAbs);
     const avgWin = toNumber(aggregates?.avgWin);
     const avgLossAbs = toNumber(aggregates?.avgLossAbs);
     const winCount = toNumber(aggregates?.winCount);
     const closedTradeCount = toNumber(aggregates?.closedTradeCount);
+
+    // console.log("[Analytics Debug]", {
+    //   sumProfit,
+    //   sumSwap,
+    //   sumCommissions,
+    //   totalProfit,
+    //   manualTotal: sumProfit + sumSwap + sumCommissions,
+    //   grossProfit,
+    //   grossLossAbs,
+    //   closedTradeCount,
+    // });
 
     const analyticsData: AnalyticsData = {
       netPL: calculateNetPL(totalProfit),

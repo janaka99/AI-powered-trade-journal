@@ -8,6 +8,7 @@ import DirectionalAnalysis from "./_components/directional-analysis";
 import RiskManagement from "./_components/risk-management";
 import TradeCalendar from "./_components/trade-calendar";
 import EquityCurve from "./_components/equity-curve";
+import SymbolBreakdownBoard from "./_components/symbol-breakdown-board";
 import TradesList from "./_components/trades-list";
 import { useTradeAccountContext } from "@/context/trade-account/trade-account-context";
 
@@ -31,6 +32,7 @@ function HomePage() {
       <ActivityStats />
       <EquityCurve />
       <TradeCalendar />
+      <SymbolBreakdownBoard />
       <TradesList />
     </div>
   );

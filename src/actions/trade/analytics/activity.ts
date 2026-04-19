@@ -106,7 +106,7 @@ export async function getActivityStatsAction(
         and(
           eq(trade.userId, session.user.id),
           inArray(trade.accountId, accountIds),
-          sql`${trade.createdAt}::date = ${startOfToday}::date`,
+          sql`${trade.entryTime}::date = ${startOfToday}::date`,
         ),
       );
 
@@ -118,7 +118,7 @@ export async function getActivityStatsAction(
         and(
           eq(trade.userId, session.user.id),
           inArray(trade.accountId, accountIds),
-          sql`${trade.createdAt} >= ${startOfWeek}`,
+          sql`${trade.entryTime} >= ${startOfWeek}`,
         ),
       );
 
@@ -130,14 +130,14 @@ export async function getActivityStatsAction(
         and(
           eq(trade.userId, session.user.id),
           inArray(trade.accountId, accountIds),
-          sql`${trade.createdAt} >= ${startOfMonth}`,
+          sql`${trade.entryTime} >= ${startOfMonth}`,
         ),
       );
 
     // Active trading days (unique days with trades)
     const [{ activeTradingDays }] = await db
       .select({
-        activeTradingDays: sql<string>`count(distinct ${trade.createdAt}::date)`,
+        activeTradingDays: sql<string>`count(distinct ${trade.entryTime}::date)`,
       })
       .from(trade)
       .where(
@@ -150,7 +150,7 @@ export async function getActivityStatsAction(
     // Most active hour
     const [mostActiveHourRow] = await db
       .select({
-        hour: sql<string>`extract(hour from ${trade.createdAt})`,
+        hour: sql<string>`extract(hour from ${trade.entryTime})`,
         count: sql<string>`count(*)`,
       })
       .from(trade)
@@ -160,7 +160,7 @@ export async function getActivityStatsAction(
           inArray(trade.accountId, accountIds),
         ),
       )
-      .groupBy(sql`extract(hour from ${trade.createdAt})`)
+      .groupBy(sql`extract(hour from ${trade.entryTime})`)
       .orderBy(sql`count(*) DESC`)
       .limit(1);
 
