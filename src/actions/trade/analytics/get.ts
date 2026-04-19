@@ -119,14 +119,16 @@ export async function getAnalyticsAction(
       };
     }
 
+    const netProfitExpr = sql`(${trade.profit} + coalesce(${trade.swap}, 0) + coalesce(${trade.commissions}, 0))`;
+
     const [aggregates] = await db
       .select({
-        totalProfit: sql<string>`coalesce(sum(${trade.profit}), 0)`,
-        grossProfit: sql<string>`coalesce(sum(case when ${trade.profit} > 0 then ${trade.profit} else 0 end), 0)`,
-        grossLossAbs: sql<string>`coalesce(sum(case when ${trade.profit} < 0 then abs(${trade.profit}) else 0 end), 0)`,
-        avgWin: sql<string>`coalesce(avg(case when ${trade.profit} > 0 then ${trade.profit} end), 0)`,
-        avgLossAbs: sql<string>`coalesce(avg(case when ${trade.profit} < 0 then abs(${trade.profit}) end), 0)`,
-        winCount: sql<string>`count(case when ${trade.profit} > 0 then 1 end)`,
+        totalProfit: sql<string>`coalesce(sum(${netProfitExpr}), 0)`,
+        grossProfit: sql<string>`coalesce(sum(case when ${netProfitExpr} > 0 then ${netProfitExpr} else 0 end), 0)`,
+        grossLossAbs: sql<string>`coalesce(sum(case when ${netProfitExpr} < 0 then abs(${netProfitExpr}) else 0 end), 0)`,
+        avgWin: sql<string>`coalesce(avg(case when ${netProfitExpr} > 0 then ${netProfitExpr} end), 0)`,
+        avgLossAbs: sql<string>`coalesce(avg(case when ${netProfitExpr} < 0 then abs(${netProfitExpr}) end), 0)`,
+        winCount: sql<string>`count(case when ${netProfitExpr} > 0 then 1 end)`,
         closedTradeCount: sql<string>`count(${trade.profit})`,
       })
       .from(trade)

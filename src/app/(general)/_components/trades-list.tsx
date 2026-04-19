@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { getAllTradesAction } from "@/actions/trade/all-trades";
+import { listTradeSymbolsAction } from "@/actions/trade/list-symbols";
 import { deleteTradeAction } from "@/actions/trade/delete";
 import { useActionSWR } from "@/hooks/use-action-swr";
 import { useTradeAccountContext } from "@/context/trade-account/trade-account-context";
@@ -35,6 +36,8 @@ import { Calendar } from "@/components/ui/calendar";
 import {
   AlertCircle,
   CalendarIcon,
+  Check,
+  ChevronsUpDown,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -43,8 +46,27 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+type OrderByField = "exitTime" | "entryTime" | "exitPrice";
+type OrderByDirection = "asc" | "desc";
+
+const ORDER_OPTIONS = [
+  { value: "exitTime-desc", label: "Exit Time (Newest)" },
+  { value: "exitTime-asc", label: "Exit Time (Oldest)" },
+  { value: "entryTime-desc", label: "Entry Time (Newest)" },
+  { value: "entryTime-asc", label: "Entry Time (Oldest)" },
+  { value: "exitPrice-desc", label: "Exit Price (High to Low)" },
+  { value: "exitPrice-asc", label: "Exit Price (Low to High)" },
+] as const;
 
 const ITEMS_PER_PAGE = 20;
 
@@ -53,6 +75,12 @@ export default function TradesList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [orderBy, setOrderBy] = useState<OrderByField>("exitTime");
+  const [orderDirection, setOrderDirection] =
+    useState<OrderByDirection>("desc");
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+
+  const { data: symbols } = useActionSWR(listTradeSymbolsAction, accountIds);
 
   const { data, isLoading, error, revalidate } = useActionSWR(
     getAllTradesAction,
@@ -62,6 +90,9 @@ export default function TradesList() {
       limit: ITEMS_PER_PAGE,
       startDate: startDate ? format(startDate, "yyyy-MM-dd") : undefined,
       endDate: endDate ? format(endDate, "yyyy-MM-dd") : undefined,
+      orderBy,
+      orderDirection,
+      symbols: selectedSymbols.length > 0 ? selectedSymbols : undefined,
     },
   );
 
@@ -72,6 +103,20 @@ export default function TradesList() {
   const handleClearDates = () => {
     setStartDate(undefined);
     setEndDate(undefined);
+    setCurrentPage(1);
+  };
+
+  const handleToggleSymbol = (symbol: string) => {
+    setSelectedSymbols((prev) =>
+      prev.includes(symbol)
+        ? prev.filter((s) => s !== symbol)
+        : [...prev, symbol],
+    );
+    setCurrentPage(1);
+  };
+
+  const handleClearSymbols = () => {
+    setSelectedSymbols([]);
     setCurrentPage(1);
   };
 
@@ -95,6 +140,35 @@ export default function TradesList() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Latest Trades</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            <SymbolFilter
+              symbols={symbols ?? []}
+              selected={selectedSymbols}
+              onToggle={handleToggleSymbol}
+              onClear={handleClearSymbols}
+            />
+            <Select
+              value={`${orderBy}-${orderDirection}`}
+              onValueChange={(value) => {
+                const [field, dir] = value.split("-") as [
+                  OrderByField,
+                  OrderByDirection,
+                ];
+                setOrderBy(field);
+                setOrderDirection(dir);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger size="sm" className="h-8">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {ORDER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <DatePicker
               label="From"
               date={startDate}
@@ -171,6 +245,83 @@ export default function TradesList() {
 }
 
 // ==================== Sub-components ====================
+
+type SymbolFilterProps = {
+  symbols: string[];
+  selected: string[];
+  onToggle: (symbol: string) => void;
+  onClear: () => void;
+};
+
+function SymbolFilter({
+  symbols,
+  selected,
+  onToggle,
+  onClear,
+}: SymbolFilterProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-8 justify-start text-left font-normal",
+            selected.length === 0 && "text-muted-foreground",
+          )}
+        >
+          <ChevronsUpDown className="mr-2 size-3.5" />
+          {selected.length > 0
+            ? `${selected.length} symbol${selected.length > 1 ? "s" : ""}`
+            : "All Symbols"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-0" align="start">
+        <div className="max-h-60 overflow-y-auto p-1">
+          {symbols.length === 0 ? (
+            <p className="p-2 text-center text-sm text-muted-foreground">
+              No symbols found
+            </p>
+          ) : (
+            symbols.map((symbol) => (
+              <button
+                key={symbol}
+                type="button"
+                onClick={() => onToggle(symbol)}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                <div
+                  className={cn(
+                    "flex size-4 items-center justify-center rounded-sm border",
+                    selected.includes(symbol)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-muted-foreground/25",
+                  )}
+                >
+                  {selected.includes(symbol) && <Check className="size-3" />}
+                </div>
+                {symbol}
+              </button>
+            ))
+          )}
+        </div>
+        {selected.length > 0 && (
+          <div className="border-t p-1">
+            <button
+              type="button"
+              onClick={onClear}
+              className="w-full rounded-sm px-2 py-1.5 text-center text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 type DatePickerProps = {
   label: string;

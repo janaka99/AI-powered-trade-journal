@@ -41,12 +41,18 @@ type AllTradesData = {
   pagination: PaginationMeta;
 };
 
+type OrderByField = "exitTime" | "entryTime" | "exitPrice";
+type OrderByDirection = "asc" | "desc";
+
 type GetAllTradesInput = {
   accountIds: string[];
   page?: number;
   limit?: number;
   startDate?: string;
   endDate?: string;
+  orderBy?: OrderByField;
+  orderDirection?: OrderByDirection;
+  symbols?: string[];
 };
 
 const DEFAULT_PAGE = 1;
@@ -132,10 +138,17 @@ export async function getAllTradesAction(
       dateFilters.push(lte(trade.exitTime, end));
     }
 
+    // Build symbol filter (case-insensitive)
+    const symbolFilter =
+      input.symbols && input.symbols.length > 0
+        ? [inArray(sql`upper(${trade.symbol})`, input.symbols.map((s) => s.toUpperCase()))]
+        : [];
+
     const whereClause = and(
       eq(trade.userId, session.user.id),
       inArray(trade.accountId, accountIds),
       ...dateFilters,
+      ...symbolFilter,
     );
 
     // Get total count for pagination metadata
@@ -143,6 +156,17 @@ export async function getAllTradesAction(
       .select({ totalItems: count() })
       .from(trade)
       .where(whereClause);
+
+    // Determine sort column and direction
+    const orderByField = input.orderBy ?? "exitTime";
+    const orderDir = input.orderDirection ?? "desc";
+    const columnMap = {
+      exitTime: trade.exitTime,
+      entryTime: trade.entryTime,
+      exitPrice: trade.exitPrice,
+    } as const;
+    const sortColumn = columnMap[orderByField];
+    const sortFn = orderDir === "asc" ? asc : desc;
 
     // Fetch paginated trades
     const trades = await db
@@ -166,7 +190,7 @@ export async function getAllTradesAction(
       })
       .from(trade)
       .where(whereClause)
-      .orderBy(desc(trade.exitTime))
+      .orderBy(sortFn(sortColumn))
       .limit(limit)
       .offset(offset);
 
