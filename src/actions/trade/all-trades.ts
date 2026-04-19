@@ -141,7 +141,12 @@ export async function getAllTradesAction(
     // Build symbol filter (case-insensitive)
     const symbolFilter =
       input.symbols && input.symbols.length > 0
-        ? [inArray(sql`upper(${trade.symbol})`, input.symbols.map((s) => s.toUpperCase()))]
+        ? [
+            inArray(
+              sql`upper(${trade.symbol})`,
+              input.symbols.map((s) => s.toUpperCase()),
+            ),
+          ]
         : [];
 
     const whereClause = and(
