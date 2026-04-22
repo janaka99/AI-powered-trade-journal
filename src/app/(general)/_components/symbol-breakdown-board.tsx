@@ -398,6 +398,21 @@ export default function SymbolBreakdownBoard() {
     );
   }
 
+  const sortedData = [...data].sort((a, b) => {
+    const aHasEnoughTrades = a.tradeCount > 5;
+    const bHasEnoughTrades = b.tradeCount > 5;
+
+    if (aHasEnoughTrades !== bHasEnoughTrades) {
+      return aHasEnoughTrades ? -1 : 1;
+    }
+
+    if (b.winRate !== a.winRate) {
+      return b.winRate - a.winRate;
+    }
+
+    return b.tradeCount - a.tradeCount;
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -422,7 +437,7 @@ export default function SymbolBreakdownBoard() {
         <>
           <TotalsSummary data={data} />
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {data.map((row) => (
+            {sortedData.map((row) => (
               <SymbolCard key={row.symbol} row={row} />
             ))}
           </div>
