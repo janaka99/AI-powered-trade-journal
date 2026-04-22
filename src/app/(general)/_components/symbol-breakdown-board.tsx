@@ -463,6 +463,7 @@ function SymbolFilter({
   onClear,
 }: SymbolFilterProps) {
   const [open, setOpen] = useState(false);
+  const sortedSymbols = [...symbols].sort((a, b) => a.localeCompare(b));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -483,12 +484,12 @@ function SymbolFilter({
       </PopoverTrigger>
       <PopoverContent className="w-48 p-0" align="end">
         <div className="max-h-60 overflow-y-auto p-1">
-          {symbols.length === 0 ? (
+          {sortedSymbols.length === 0 ? (
             <p className="p-2 text-center text-sm text-muted-foreground">
               No symbols found
             </p>
           ) : (
-            symbols.map((symbol) => (
+            sortedSymbols.map((symbol) => (
               <button
                 key={symbol}
                 type="button"

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpenText,
   ChartCandlestick,
+  ChartNoAxesCombined,
   Home,
   LayoutDashboard,
   Shield,
@@ -34,6 +35,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { title: "Home", href: "/", icon: Home },
+  { title: "Analytics", href: "/analytics", icon: ChartNoAxesCombined },
   { title: "Journal", href: "/journal", icon: ChartCandlestick },
   // { title: "Manual Journal", href: "/manual-journal", icon: BookOpenText },
   { title: "Profile", href: "/profile", icon: UserCircle2 },
