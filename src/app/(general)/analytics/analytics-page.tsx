@@ -114,7 +114,8 @@ export default function AnalyticsPage() {
       const parsedValue = JSON.parse(storedValue);
       const storedSymbols = Array.isArray(parsedValue)
         ? parsedValue.filter(
-            (value): value is string => typeof value === "string" && value,
+            (value): value is string =>
+              typeof value === "string" && value.length > 0,
           )
         : [];
 
